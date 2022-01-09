@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Asteroids.Game.Common
+namespace Asteroids.Common
 {
     public static class NumericsHelper
     {

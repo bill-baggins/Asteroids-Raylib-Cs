@@ -5,51 +5,64 @@ using System.Collections.Generic;
 using Asteroids.Game.Bullet;
 using Asteroids.Game.Ship;
 using Asteroids.Game.Asteroid;
+using Asteroids.Game.Explosions;
 
 using Raylib_CsLo;
+
 
 namespace Asteroids.Game.Collision
 {
 	using static Raylib_CsLo.Raylib;
-	using static Asteroids.Game.Asteroid.AsteroidEntitySize;
+	using static Asteroids.Game.EntitySize;
 
 	// Handles all logic related to the collision of game objects.
 	// It will modify certain attributes of the game objects,
 	// namely the List<BulletEntity> and List<AsteroidEntity> collections.
 	public static class CollisionHandler
 	{
-
-		public static void CheckCollisionListBulletAsteroid(
-			List<BulletEntity> bullets, 
-			List<AsteroidEntity> asteroids)
+		public static void ManageCollisionListBulletAsteroid(
+			ShipEntity ship,
+			List<BulletEntity> bullet, 
+			List<AsteroidEntity> asteroid,
+			List<ExplosionEntity> explosion)
 		{
-			foreach (var bullet in bullets)
+			foreach (var b in bullet)
 			{
-				CheckCollisionBulletAsteroidList(bullet, asteroids);
+				ManageCollisionBulletAsteroidList(ship, b, asteroid, explosion);
 			}
 		}
 
-		public static void CheckCollisionShipAsteroidList(
+		public static void ManageCollisionShipAsteroidList(
 			ShipEntity ship,
-			List<AsteroidEntity> asteroids)
+			List<AsteroidEntity> asteroids,
+			List<ExplosionEntity> explosions)
 		{
+			if (ship.Health == 0 && ship.Tint.a != 0)
+			{
+				ship.Tint.a = 0;
+				explosions.Add(new ExplosionEntity(ship.DestRec, MEDIUM, GameSound.ShipExplosion));
+				return;
+			}
+
 			int i = 0;
 			while (i < asteroids.Count)
 			{
 				var asteroid = asteroids[i];
-				if (CheckCollisionRecs(ship.Hitbox, asteroid.Hitbox))
+				if (!ship.IsInvincible && CheckCollisionRecs(ship.Hitbox, asteroid.Hitbox))
 				{
-					// Console.WriteLine("Ship hit the asteroid!\n\n");
+					ship.GotHit = true;
+					ship.IsInvincible = true;
+					ship.Health -= 1;
+					break;
 				}
 				i += 1;
-
 			}
 		}
-		
-
-		private static void CheckCollisionBulletAsteroidList(
+		private static void ManageCollisionBulletAsteroidList(
+			ShipEntity ship,
 			BulletEntity bullet,
-			List<AsteroidEntity> asteroids)
+			List<AsteroidEntity> asteroids,
+			List<ExplosionEntity> explosions)
 		{
 			int j = 0;
 			while (j < asteroids.Count)
@@ -57,11 +70,12 @@ namespace Asteroids.Game.Collision
 				var asteroid = asteroids[j];
 				if (CheckCollisionRecs(bullet.Hitbox, asteroid.Hitbox))
 				{
+					ship.Score += 5;
 					bullet.IsOutOfBounds = true;
 					if (asteroid.Size != SMALL)
 					{
 						// Change the size of the asteroid to be the next smallest.
-						var newSize = asteroid.Size + 1;
+						EntitySize newSize = asteroid.Size + 1;
 
 						// Create a temporary array of values. These are for convenience in the for loop
 						// below.
@@ -78,6 +92,17 @@ namespace Asteroids.Game.Collision
 							asteroids.Add(new AsteroidEntity(newSize, temp[k].X, temp[k].Y));
 						}
 					}
+
+					// Add an explosion to the list.
+					Sound explosionSoundType = asteroid.Size switch
+					{
+						LARGE => GameSound.LargeAsteroidExplosion,
+						MEDIUM => GameSound.MediumAsteroidExplosion,
+						SMALL => GameSound.SmallAsteroidExplosion,
+						_ => throw new Exception("Asteroid was not LARGE, MEDIUM, or SMALL.")
+					};
+
+					explosions.Add(new ExplosionEntity(asteroid.DestRec, asteroid.Size, explosionSoundType));
 
 					// Regardless of the type of asteroid it is, delete it from the list.
 					asteroids.RemoveAt(j);

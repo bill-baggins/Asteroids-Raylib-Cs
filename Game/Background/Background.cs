@@ -2,30 +2,26 @@ using Raylib_CsLo;
 using System.Numerics;
 using System.Collections.Generic;
 
-using Asteroids.Game.Common;
+using Asteroids.Common;
+using Asteroids.State;
 
 namespace Asteroids.Game.Background
 {
     using static Raylib_CsLo.Raylib;
 
-    public class BackgroundEntity : IEntity
+    public class BackgroundEntity
     {
         public Texture Texture;
         public Vector2 Pos;
 
         public unsafe BackgroundEntity()
         {
-            var im = ImageLoaderHelper.LoadImageFromByteArray(Resource.Space);
-            ImageResize(&im, Globals.ScreenWidth, Globals.ScreenHeight);
+            var im = ResourceLoaderHelper.LoadImageFromByteArray(Resource.Space);
+            ImageResize(&im, Settings.ScreenWidth, Settings.ScreenHeight);
             Texture = LoadTextureFromImage(im);
             UnloadImage(im);
 
             Pos = new Vector2(0, 0);
-        }
-
-        public void Update(float dt)
-        {
-
         }
 
         public void Draw() 

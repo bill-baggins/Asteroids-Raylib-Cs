@@ -3,19 +3,21 @@ using System.Numerics;
 using System.Collections.Generic;
 
 using Raylib_CsLo;
-using Asteroids.Game.Common;
+
 using Asteroids.Game.Bullet;
+using Asteroids.State;
 
 namespace Asteroids.Game.Ship
 {
 	using static Raylib_CsLo.Raylib;
-	using static Raylib_CsLo.KeyboardKey;
+	
+
+	using static Asteroids.Game.Handlers.TextureHandler;
 
 	// The definition for the SpaceShip. This is useful for reference whenever modifying
 	// any of the other files.
-	public partial class ShipEntity : IEntity
-    {
-		public Texture Texture;
+	public partial class ShipEntity
+	{
 		public Vector2 Origin;
 		public Rectangle SourceRec;
 		public Rectangle DestRec;
@@ -31,126 +33,110 @@ namespace Asteroids.Game.Ship
 
 		public List<BulletEntity> Bullets;
 
-		private readonly int screenWidth;
-		private readonly int screenHeight;
+		public int Health;
+		public bool IsInvincible;
+		public bool GotHit;
+		public Color Tint = YELLOW;
 
+		public int Score;
+		public int PreviousScore;
 
-		public unsafe ShipEntity(float scale)
-		{
-			var im = ImageLoaderHelper.LoadImageFromByteArray(Resource.Ship);
+		private int _invincibleTimeCounter;
+		private readonly int _invincibleTimeCounterLimit = 500;
 
-			ImageColorReplace(&im, MAGENTA, new Color(0, 0, 0, 0));
-			if (scale != 1.0f)
-			{
-				ImageResize(&im, (int)(im.width * scale), (int)(im.height * scale));
-			}
+		private bool _showPlayerTheyGainedHealth;
+		private int _showPlayerTheyGainedHealthCounter;
+		private readonly int _showPlayerTheyGainedHalthCounterLimit = 500;
 
-			Texture = LoadTextureFromImage(im);
+		private readonly int _screenWidth;
+		private readonly int _screenHeight;
 
+		public unsafe ShipEntity()
+		{	
 			// Set the origin to be in the middle of the texture.
 			Origin = new Vector2(
-				Texture.width / 2,
-				Texture.height / 2
+				ShipTexture.width / 2,
+				ShipTexture.height / 2
 			);
 
 			// Rectangle that frames around the image.
 			SourceRec = new Rectangle(
 				0.0f,
 				0.0f,
-				Texture.width,
-				Texture.height
+				ShipTexture.width,
+				ShipTexture.height
 			);
 
 			// The rectangle that move around the image.
 			DestRec = new Rectangle(
-				(Globals.ScreenWidth / 2) - (Texture.width / 2),
-				(Globals.ScreenHeight / 2) - (Texture.height / 2),
-				Texture.width,
-				Texture.height
+				(Settings.ScreenWidth / 2) - (ShipTexture.width / 2),
+				(Settings.ScreenHeight / 2) - (ShipTexture.height / 2),
+				ShipTexture.width,
+				ShipTexture.height
 			);
 
 			// The Hitbox, which relies on the DestRec Rectangle.
 			Hitbox = new Rectangle(
-				DestRec.X - (Texture.width / 2),
-				DestRec.Y - (Texture.height / 2),
-				(Texture.width),
-				(Texture.height)
+				DestRec.X - (ShipTexture.width / 2),
+				DestRec.Y - (ShipTexture.height / 2),
+				(ShipTexture.width),
+				(ShipTexture.height)
 			);
 
 			Rotation = 0.0f;
 			DeltaRotate = 180.0f;
 
 			Velocity = 0.0f;
-			MaxVelocity = 300.0f;
+			MaxVelocity = 200.0f;
 
 			Accelerate = 300.0f;
 			DeceleratePercentage = 0.96f;
 
-			screenWidth = Globals.ScreenWidth;
-			screenHeight = Globals.ScreenHeight;
+			_screenWidth = Settings.ScreenWidth;
+			_screenHeight = Settings.ScreenHeight;
 
 			Bullets = new List<BulletEntity>();
+			Health = 5;
+			Score = 0;
+
+			_showPlayerTheyGainedHealth = false;
 		}
 
 		public void Update(float dt)
 		{
 			// User Events
 			// -------------------------------------------------------------------------
-			// Rotate Counter-Clockwise
-			if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
-			{
-				Rotation += -DeltaRotate * dt;
-			}
-
-			// Rotate Clockwise
-			if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT))
-			{
-				Rotation += DeltaRotate * dt;
-			}
-
-			// Control acceleration
-			if ((IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) && Velocity < MaxVelocity)
-			{
-				Velocity += Accelerate * dt;
-			}
-
-			// Decelerate when the player is not holding down the W or UP arrow keys.
-			if (IsKeyUp(KEY_W) || IsKeyUp(KEY_UP))
-			{
-				Velocity *= DeceleratePercentage;
-			}
-
-			if (IsKeyPressed(KEY_Z) || IsKeyPressed(KEY_SPACE))
-			{
-				AddNewBulletToList();
-			}
-
-			// Moves the ship around if the Velocity is greater than zero.
-			if (Velocity > 0)
-			{
-				MoveShip(dt);
-			}
+			GetUserInput(dt);
 
 			// Update functions
 			// -------------------------------------------------------------------------
 
+			PlaySoundIfShipGotHit();
+			UpdateHealthBasedOnScore();
+			AnimateInvincibleTimePeriod();
 			ModulusShipRotation();
 			CapShipVelocity();
-			CheckShipBounds();
 			CheckBulletBounds();
 			UpdateBullets(dt);
 		}
 
 		public void Draw()
 		{
-			DrawTexturePro(
-				Texture,
-				SourceRec,
-				DestRec,
-				Origin,
-				Rotation,
-				WHITE
-			);
+            if (_showPlayerTheyGainedHealth)
+			{
+				_showPlayerTheyGainedHealthCounter += 1;
+				if (_showPlayerTheyGainedHealthCounter >= _showPlayerTheyGainedHalthCounterLimit)
+				{
+					_showPlayerTheyGainedHealthCounter = 0;
+					_showPlayerTheyGainedHealth = false;
+				}
+				else
+				{
+					DrawText("You gained 1 HP!", Settings.ScreenWidth / 2 - 100, Settings.ScreenHeight / 2 - 20, 20, GOLD);
+				}
+			}
+
+			DrawTexturePro(ShipTexture, SourceRec, DestRec, Origin, Rotation, Tint);
 
 			if (Globals.DebugMode)
 			{
@@ -163,9 +149,18 @@ namespace Asteroids.Game.Ship
 			}
 		}
 
-		public void Unload()
+		public void DrawHealth()
 		{
-			UnloadTexture(Texture);
+			for (int i = Health; i >= 0; i--)
+            {
+				DrawRectangle(Settings.ScreenWidth - (i * 20), 0, 15, 15, RED);
+            }
+		}
+
+		public void DrawScore()
+        {
+			DrawText($"Score: {Score}", 0, 0, 20, GOLD);
+			DrawText($"High Score: {Globals.HIGH_SCORE}", 0, 20, 20, GOLD);
 		}
 	}
 }

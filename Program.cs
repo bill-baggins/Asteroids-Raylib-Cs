@@ -1,22 +1,13 @@
 ﻿using System;
-using Asteroids.Game;
+using Asteroids.Loops;
 
 namespace Asteroids
 {
-    class Program
+    sealed class Program
     {
-        static void Main(string[] args)
+        private static void Main()
         {
-            var game = new MainGameClass()
-            {
-                Width = Globals.ScreenWidth,
-                Height = Globals.ScreenHeight,
-                Caption = Globals.Caption,
-                Fullscreen = false,
-                Fps = 60,
-            };
-            game.Load();
-            game.DesktopMainLoop();
+            new MainGameClass().Run();
         }
     }
 }

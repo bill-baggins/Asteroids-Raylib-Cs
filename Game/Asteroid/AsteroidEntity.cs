@@ -2,21 +2,22 @@
 using System.Numerics;
 using Raylib_CsLo;
 
-using Asteroids.Game.Common;
+using Asteroids.Common;
+using Asteroids.Game.Handlers;
+using Asteroids.State;
 
 namespace Asteroids.Game.Asteroid
 {
 	using static Raylib_CsLo.Raylib;
-	using static Asteroids.Game.Asteroid.AsteroidEntitySize;
 
-	public partial class AsteroidEntity : IEntity
+	public class AsteroidEntity
     {
 		public Rectangle SourceRec;
 		public Rectangle DestRec;
 		public Rectangle Hitbox;
 		public Vector2 Origin;
 		public Vector2 Velocity;
-		public AsteroidEntitySize Size;
+		public EntitySize Size;
 
 		public Vector2 TopLeft;
 		public Vector2 TopRight;
@@ -26,20 +27,42 @@ namespace Asteroids.Game.Asteroid
 		public float FrameSizeX;
 		public float FrameSizeY;
 
-		private float frameCounter = 0.0f;
-		private readonly float frameCounterLimit = 0.1f;
+		public bool IsDestroyed = false;
 
-		private int currentFrame = 0;
-		private readonly int numberOfFrames = 16;
+		private float _frameCounter = 0.0f;
+		private readonly float _frameCounterLimit = 0.075f;
 
-		public AsteroidEntity(AsteroidEntitySize size, float? x, float? y)
+		private int _currentFrame = 0;
+		private readonly int _numberOfFrames = 16;
+
+		public AsteroidEntity(EntitySize size, float? x, float? y)
 		{
 			Size = size;
-			FrameSizeX = AsteroidTextureHandler.FrameSizeX(size);
-			FrameSizeY = AsteroidTextureHandler.FrameSizeY(size);
 
-			float destRecX = GetRandomValue(0, (int)FrameSizeX);
-			float destRecY = GetRandomValue(0, (int)FrameSizeY);
+			var frameSize = TextureHandler.GetAsteroidFrameSize(size);
+			FrameSizeX = frameSize.X;
+			FrameSizeY = frameSize.Y;
+			
+			Vector2[] randomSpawnPoints = new Vector2[] {
+				new Vector2(
+					-FrameSizeX,
+					-FrameSizeY
+				),
+				new Vector2(
+					Settings.ScreenWidth + (int)FrameSizeX,
+					-FrameSizeY
+				),
+				new Vector2(
+					-FrameSizeX,
+					Settings.ScreenHeight + (int)FrameSizeY
+				),
+				new Vector2(
+					Settings.ScreenWidth + (int)FrameSizeX,
+					Settings.ScreenHeight + (int)FrameSizeY
+				)
+			};
+
+			var destRec = randomSpawnPoints[GetRandomValue(0, randomSpawnPoints.Length - 1)];
 
 			SourceRec = new Rectangle(
 				0.0f,
@@ -48,15 +71,15 @@ namespace Asteroids.Game.Asteroid
 				FrameSizeY
 			);
 
-			if (x is not null && y is not null)
+			if (x != null && y != null)
 			{
-				destRecX = (float)x;
-				destRecY = (float)y;
+				destRec.X = (float)x;
+				destRec.Y = (float)y;
 			}
 
 			DestRec = new Rectangle(
-				destRecX,
-				destRecY,
+				destRec.X,
+				destRec.Y,
 				FrameSizeX,
 				FrameSizeY
 			);
@@ -77,10 +100,12 @@ namespace Asteroids.Game.Asteroid
 				GetRandomValue(-100, 100),
 				GetRandomValue(-100, 100)
 			);
+
 			if (Velocity.X < 10 && Velocity.X > -10)
 			{
 				Velocity.X = Velocity.X < 0 ? -20 : 20;
 			}
+
 			if (Velocity.Y == 0)
 			{
 				Velocity.Y += Velocity.Y < 0 ? -20 : 20;
@@ -89,31 +114,75 @@ namespace Asteroids.Game.Asteroid
 
 		public void Update(float dt)
 		{
-			AnimateAsteroid(dt);
-			CheckBounds();
+			UpdateAsteroidAnimationFrame(dt);
+			MoveAsteroid(dt);
+		}
+
+		public void Draw()
+		{
+			DrawTexturePro(
+				TextureHandler.GetAsteroidTextureBySize(Size),
+				SourceRec,
+				DestRec,
+				Origin,
+				0.0f,
+				WHITE
+			);
+
+			if (Globals.DebugMode)
+			{
+				DrawRectangleLinesEx(Hitbox, 2, GREEN);
+			}
+		}
+
+		private void UpdateAsteroidAnimationFrame(float dt)
+		{
+			_frameCounter += dt;
+			if (_frameCounter > _frameCounterLimit)
+			{
+				_frameCounter = 0;
+				_currentFrame += 1;
+				if (_currentFrame == _numberOfFrames)
+				{
+					_currentFrame = 0;
+				}
+				SourceRec.X = _currentFrame * FrameSizeX;
+			}
+		}
+
+		private void MoveAsteroid(float dt)
+		{
+			var rightEdge = Settings.ScreenWidth;
+			var leftEdge = -Hitbox.width / 2;
+			var topEdge = -Hitbox.height / 2;
+			var bottomEdge = Settings.ScreenHeight;
+
+			if (Hitbox.X < leftEdge * 2)
+			{
+				Hitbox.X = rightEdge;
+				DestRec.X = rightEdge + (Hitbox.width / 2);
+			}
+			else if (Hitbox.X > rightEdge + Hitbox.width)
+			{
+				Hitbox.X = leftEdge;
+				DestRec.X = 0;
+			}
+
+			if (Hitbox.Y < topEdge * 2)
+			{
+				Hitbox.Y = bottomEdge;
+				DestRec.Y = bottomEdge + (Hitbox.height / 2);
+			}
+			else if (Hitbox.Y > bottomEdge + Hitbox.height)
+			{
+				Hitbox.Y = topEdge;
+				DestRec.Y = 0;
+			}
+
 			DestRec.X += Velocity.X * dt;
 			DestRec.Y += Velocity.Y * dt;
 			Hitbox.X += Velocity.X * dt;
 			Hitbox.Y += Velocity.Y * dt;
 		}
-
-		public void Draw()
-		{
-			for (int i = 0; i < numberOfFrames; i++)
-			{
-				DrawTexturePro(AsteroidTextureHandler.Texture(Size), SourceRec, DestRec, Origin, 0.0f, WHITE);
-			}
-
-			if (Globals.DebugMode)
-			{
-				DrawRectangleLinesEx(Hitbox, 2, GREEN);
-				DrawRectangleLinesEx(DestRec, 2, BLUE);
-			}
-		}
-
-		public void Unload()
-        {
-
-        }
 	}
 }

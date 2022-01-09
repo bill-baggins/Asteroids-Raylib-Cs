@@ -2,15 +2,18 @@
 using System.Numerics;
 using Raylib_CsLo;
 
-using Asteroids.Game.Common;
+using Asteroids.State;
+using Asteroids.Game.Handlers;
 
 namespace Asteroids.Game.Bullet
 {
-    using static Asteroids.Game.Common.NumericsHelper;
-    using static Raylib_CsLo.Raylib;
+    using static Asteroids.Common.NumericsHelper;
+    using static Raylib;
 
-    public class BulletEntity : IEntity
+    public class BulletEntity
     {
+        public Rectangle SourceRec;
+        public Rectangle DestRec;
         public Rectangle Hitbox;
         public Vector2 Origin;
         
@@ -21,7 +24,15 @@ namespace Asteroids.Game.Bullet
 
         public BulletEntity(float x, float y, float width, float height, float rotation)
         {
-            Hitbox = new Rectangle(x, y, width, height);
+            PlaySound(GameSound.LaserFiring);
+            SourceRec = new Rectangle(0, 0, width, height);
+            DestRec = new Rectangle(x, y, width, height);
+            Hitbox = new Rectangle(
+                x - width / 2,
+                y - height / 2,
+                width,
+                height
+            );
             Origin = new Vector2(Hitbox.width/2, Hitbox.height/2);
 
             Rotation = rotation;
@@ -30,27 +41,38 @@ namespace Asteroids.Game.Bullet
             IsOutOfBounds = false;
         }
 
-        public void Update(float dt)
+        public unsafe void Update(float dt)
         {
             if (Hitbox.X < -Hitbox.X ||
-                Hitbox.X > Globals.ScreenWidth ||
+                Hitbox.X > Settings.ScreenWidth ||
                 Hitbox.Y < -Hitbox.Y ||
-                Hitbox.Y > Globals.ScreenHeight)
+                Hitbox.Y > Settings.ScreenHeight)
             {
                 IsOutOfBounds = true;
             }
+
+            DestRec.X -= (float)Math.Cos(ToRad(Rotation + 90.0)) * Velocity * dt;
+            DestRec.Y -= (float)Math.Sin(ToRad(Rotation + 90.0)) * Velocity * dt;
+
             Hitbox.X -= (float)Math.Cos(ToRad(Rotation + 90.0)) * Velocity * dt;
             Hitbox.Y -= (float)Math.Sin(ToRad(Rotation + 90.0)) * Velocity * dt;
         }
 
         public void Draw()
         {
-            DrawRectanglePro(Hitbox, Origin, Rotation, RED);
-        }
+            DrawTexturePro(
+                TextureHandler.LaserTexture,
+                SourceRec,
+                DestRec,
+                Origin,
+                Rotation,
+                WHITE
+            );
 
-        public void Unload()
-        {
-            
+            if (Globals.DebugMode)
+			{
+                DrawRectangleLinesEx(Hitbox, 2, BLUE);
+			}
         }
     }
 }

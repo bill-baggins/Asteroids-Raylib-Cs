@@ -39,7 +39,8 @@ namespace Asteroids.Game
 			SetSoundVolume(LaserFiring, 0.1f);
 
 			ShipHit = LoadSoundFromMemoryStream(Resource.ShipHit);
-			SetSoundVolume(ShipHit, 0.6f);
+			SetSoundVolume(ShipHit, 1.0f);
+			SetSoundPitch(ShipHit, 1.3f);
 
 		}
 

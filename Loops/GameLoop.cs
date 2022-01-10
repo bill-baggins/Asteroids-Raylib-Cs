@@ -28,6 +28,7 @@ namespace Asteroids.Loops
             TextureHandler.Setup(scale: 0.5f);
             GameSound.Setup();
             Settings.FPSBinds();
+
             // Settings.NormalBinds();
 
             // Load in the Game Objects. These are dependent on the textures provided by the Texture handlers.

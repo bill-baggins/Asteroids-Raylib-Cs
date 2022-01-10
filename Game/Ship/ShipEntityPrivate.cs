@@ -83,11 +83,11 @@ namespace Asteroids.Game.Ship
 				if (_invincibleTimeCounter <= _invincibleTimeCounterLimit)
 				{
 					Tint = YELLOW;
-					if (_invincibleTimeCounter % 25 == 0)
+					if (_invincibleTimeCounter % 2 == 0)
 					{
-						Tint.a = 60;
+						Tint = _transparentYellow;
 					}
-					_invincibleTimeCounter += 5;
+					_invincibleTimeCounter += 1;
 				}
                 else
                 {

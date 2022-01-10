@@ -9,25 +9,34 @@ using Raylib_CsLo;
 namespace Asteroids.Game.ArchivedIdeas
 {
     using static Raylib_CsLo.Raylib;
-    public static class Ideas
+    public static class Lazy<Ideas>
     {
         public static string GameOverText = "Surprise!";
 
         private static byte[] Initialize()
         {
-            List<byte> thing = new List<byte>();
-            foreach (string str in File.ReadAllLines(@"cursed.txt")[0].Split(' '))
+            try
             {
-                try
+                List<byte> thing = new List<byte>();
+                foreach (string str in File.ReadAllLines(@"cursed.txt")[0].Split(' '))
                 {
-                    thing.Add(Convert.ToByte(str));
+                    try
+                    {
+                        thing.Add(Convert.ToByte(str));
+                    }
+                    catch (FormatException)
+                    {
+                        break;
+                    }
                 }
-                catch (FormatException)
-                {
-                    break;
-                }
+                return thing.ToArray();
             }
-            return thing.ToArray();
+            catch (FileNotFoundException)
+            {
+                Console.WriteLine("No secrets will be revealed today...");
+                return Array.Empty<byte>();
+            }
+            
         }
 
         public unsafe static Texture Resized()

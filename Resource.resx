@@ -127,6 +127,9 @@
   <data name="ExplosionSound" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resource\explosion.wav;System.IO.MemoryStream, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="Heart" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>resource\pixil-frame-0.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="Laser" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>resource\laser.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

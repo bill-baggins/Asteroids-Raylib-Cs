@@ -16,6 +16,8 @@ namespace Asteroids.Game.Handlers
 		public static Texture ShipTexture { get; private set; }
 		public static Texture LaserTexture { get; private set; }
 
+		public static Texture HeartTexture { get; private set; }
+
 		private static Texture asteroidLargeTexture;
 		private static Texture asteroidMediumTexture;
 		private static Texture asteroidSmallTexture;
@@ -28,7 +30,7 @@ namespace Asteroids.Game.Handlers
 		public unsafe static void Setup(float scale)
 		{
 			// Load in the Ship Texture.
-			var imShip = LoadImageFromByteArray(Resource.Ship);
+			Image imShip = LoadImageFromByteArray(Resource.Ship);
 
 			ImageColorReplace(&imShip, MAGENTA, new Color(0, 0, 0, 0));
 			if (scale != 1.0f)
@@ -38,15 +40,23 @@ namespace Asteroids.Game.Handlers
 			ShipTexture = LoadTextureFromImage(imShip);
 			UnloadImage(imShip);
 
-			var imLaser = LoadImageFromByteArray(Resource.Laser);
+			// Load the laser texture and turn it into a texture;
+			Image imLaser = LoadImageFromByteArray(Resource.Laser);
 			ImageResize(&imLaser, ShipTexture.width / 10, ShipTexture.height / 2);
 			LaserTexture = LoadTextureFromImage(imLaser);
 			UnloadImage(imLaser);
 
+			// Load the heart image and turn it into a texture
+			Image imHeart = LoadImageFromByteArray(Resource.Heart);
+			ImageResize(&imHeart, imHeart.width / 4, imHeart.height / 4);
+			HeartTexture = LoadTextureFromImage(imHeart);
+			UnloadImage(imHeart);
+
+
 			// Load in Asteroid images and make textures out of them.
-			var imLargeAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
-			var imMediumAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
-			var imSmallAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
+			Image imLargeAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
+			Image imMediumAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
+			Image imSmallAsteroid = LoadImageFromByteArray(Resource.AnimatedAsteroids);
 
 			ImageResize(&imMediumAsteroid, imLargeAsteroid.width / 2, imLargeAsteroid.height / 2);
 			ImageResize(&imSmallAsteroid, 288, 40);
@@ -60,9 +70,9 @@ namespace Asteroids.Game.Handlers
 			UnloadImage(imSmallAsteroid);
 
 			// Load in Explosion images and make textures out of them.
-			var imLargeExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
-			var imMediumExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
-			var imSmallExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
+			Image imLargeExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
+			Image imMediumExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
+			Image imSmallExplosion = LoadImageFromByteArray(Resource.AnimatedExplosion);
 
 			ImageResize(&imMediumExplosion, 540, 540);
 			ImageResize(&imSmallExplosion, 270, 270);
@@ -123,6 +133,8 @@ namespace Asteroids.Game.Handlers
 		public static void Unload()
 		{
 			UnloadTexture(ShipTexture);
+			UnloadTexture(LaserTexture);
+			UnloadTexture(HeartTexture);
 
 			UnloadTexture(asteroidLargeTexture);
 			UnloadTexture(asteroidMediumTexture);

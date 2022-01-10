@@ -37,19 +37,23 @@ namespace Asteroids.Game.Ship
 		public bool IsInvincible;
 		public bool GotHit;
 		public Color Tint = YELLOW;
+		
 
 		public int Score;
 		public int PreviousScore;
 
 		private int _invincibleTimeCounter;
-		private readonly int _invincibleTimeCounterLimit = 500;
+		private readonly int _invincibleTimeCounterLimit = 100;
 
 		private bool _showPlayerTheyGainedHealth;
 		private int _showPlayerTheyGainedHealthCounter;
-		private readonly int _showPlayerTheyGainedHalthCounterLimit = 500;
+		private readonly int _showPlayerTheyGainedHalthCounterLimit = 300;
 
 		private readonly int _screenWidth;
 		private readonly int _screenHeight;
+
+		private readonly Color _transparentYellow = new Color(255, 240, 0, 60);
+		private readonly Color _transparentWhite = new Color(255, 255, 255, 60);
 
 		public unsafe ShipEntity()
 		{	
@@ -151,10 +155,23 @@ namespace Asteroids.Game.Ship
 
 		public void DrawHealth()
 		{
-			for (int i = Health; i >= 0; i--)
+			int currentHealth = Health;
+			if (IsInvincible)
             {
-				DrawRectangle(Settings.ScreenWidth - (i * 20), 0, 15, 15, RED);
+				currentHealth += 1;
             }
+
+			for (int i = currentHealth; i >= 0; i--)
+            {
+				Color currentColor = WHITE;
+				if (IsInvincible && i == currentHealth &&
+					_invincibleTimeCounter != 0 &&
+					_invincibleTimeCounter % 2 == 0)
+				{
+					currentColor = _transparentWhite;
+				}
+				DrawTexture(HeartTexture, Settings.ScreenWidth - (i * 25), 0, currentColor);
+			}
 		}
 
 		public void DrawScore()
